@@ -1,0 +1,4 @@
+:root { font-family: Inter, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #18263d; background: #f5f7fb; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+a { color: inherit; }
