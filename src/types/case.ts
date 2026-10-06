@@ -5,6 +5,8 @@ export type InformationSource =
   | 'ai_inference'
   | 'generic_role_assumption'
   | 'user_correction'
+  | 'user_supplement'
+  | 'user_confirmation'
 
 export type InformationStatus = 'confirmed' | 'inferred' | 'unknown'
 export type GapStatus = 'met' | 'partial' | 'gap' | 'unknown'
@@ -52,7 +54,7 @@ interface InformationBase {
 
 export interface ConfirmedInformation extends InformationBase {
   status: 'confirmed'
-  source: 'user_input' | 'jd' | 'user_correction'
+  source: 'user_input' | 'jd' | 'user_correction' | 'user_supplement' | 'user_confirmation'
 }
 
 export interface InferredInformation extends InformationBase {
