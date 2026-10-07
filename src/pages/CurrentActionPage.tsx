@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { ArrowRight, CircleHelp, ListChecks, X } from 'lucide-react'
 import { ActionAdjustmentDrawer } from '../components/ActionAdjustmentDrawer'
 import { ContextRail, RailCard } from '../components/ContextRail'
@@ -6,6 +6,9 @@ import { DrawerPortal } from '../components/DrawerPortal'
 import { navigate, type Assessment } from '../state/useAssessment'
 
 export function CurrentActionPage({ assessment }: { assessment: Assessment }) {
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [])
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [evidenceOpen, setEvidenceOpen] = useState(false)
   const [notice, setNotice] = useState('')

@@ -5,6 +5,7 @@ import {
   ListChecks,
   FlaskConical,
   ChevronDown,
+  Info,
   Sparkles,
 } from "lucide-react";
 import type { Route } from "../components/useHashRoute";
@@ -90,6 +91,15 @@ export function AppLayout({
           ))}
         </nav>
         <div className="sidebar-bottom" ref={demoRef}>
+          {activeRoute === 'action' && canFastForward && (
+            <div className="demo-action-hint" role="note">
+              <Info size={15} aria-hidden="true" />
+              <div>
+                <strong>演示提示</strong>
+                <p>打开「演示模式」<br />选择「<b>快进到本周期结束</b>」<br />即可继续体验行动反馈流程</p>
+              </div>
+            </div>
+          )}
           <button
             className="demo-trigger"
             type="button"

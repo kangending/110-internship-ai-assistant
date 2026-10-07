@@ -78,6 +78,33 @@
   margin-top: auto;
   position: relative;
 }
+.demo-action-hint {
+  display: flex;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+  gap: 7px;
+  margin: 0 0 8px;
+  padding: 9px 8px;
+  border: 1px solid var(--info-border);
+  border-radius: 9px;
+  background: var(--info-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.demo-action-hint > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--info);
+}
+.demo-action-hint strong,
+.demo-action-hint b {
+  color: var(--info);
+  font-weight: 650;
+}
+.demo-action-hint p {
+  margin: 4px 0 0;
+}
 .demo-trigger {
   width: 100%;
   display: flex;
@@ -1603,6 +1630,19 @@ input:not([type="checkbox"]):not([type="radio"]), textarea { font-size: 14px; }
   }
   .demo-trigger svg:last-child {
     display: none;
+  }
+  .sidebar-bottom:has(.demo-action-hint) {
+    position: relative;
+    right: auto;
+    top: auto;
+    margin-top: 8px;
+  }
+  .sidebar-bottom:has(.demo-action-hint) .demo-trigger {
+    width: 100%;
+    font-size: 12px;
+  }
+  .sidebar-bottom:has(.demo-action-hint) .demo-trigger svg:last-child {
+    display: block;
   }
   .demo-menu {
     left: auto;
