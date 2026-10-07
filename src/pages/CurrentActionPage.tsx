@@ -1,25 +1,28 @@
-import { ArrowRight, ListChecks } from "lucide-react";
-import { navigate } from "../state/useAssessment";
-import type { Assessment } from "../state/useAssessment";
-import { linHaoCase } from "../data/linHao";
+import { useState } from 'react'
+import { ArrowRight, CircleHelp, ListChecks, X } from 'lucide-react'
+import { ActionAdjustmentDrawer } from '../components/ActionAdjustmentDrawer'
+import { ContextRail, RailCard } from '../components/ContextRail'
+import { DrawerPortal } from '../components/DrawerPortal'
+import { navigate, type Assessment } from '../state/useAssessment'
 
 export function CurrentActionPage({ assessment }: { assessment: Assessment }) {
-  const selected = [...linHaoCase.revisedDiagnosis.recommendations, ...linHaoCase.firstDiagnosis.recommendations]
-    .find(item => item.id === assessment.selectedGapId);
-  return (
-    <div className="message-state page-enter">
-      <div className="message-icon">
-        <ListChecks size={27} />
-      </div>
-      <span className="eyebrow">当前行动</span>
-      <h1>把差距变成下一步行动</h1>
-      <p>{selected ? `你已选择“${selected.title}”。接下来可以把这个差距转成具体行动。` : "先看清当前最重要的差距，再决定从哪里开始。"}</p>
-      <button
-        className="button secondary"
-        onClick={() => navigate("diagnosis")}
-      >
-        返回我的诊断 <ArrowRight size={16} />
-      </button>
-    </div>
-  );
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const [notice, setNotice] = useState('')
+  const plan = assessment.currentAction
+  if (!plan) return <div className="message-state page-enter"><div className="message-icon"><ListChecks size={27}/></div><span className="eyebrow">当前行动</span><h1>还没有设置当前行动</h1><p>先完成一次诊断，再把最重要的差距转成当前行动。</p><button className="button primary" onClick={() => navigate('diagnosis')}>查看我的诊断 <ArrowRight size={16}/></button></div>
+  const ended = assessment.actionPeriod === 'ended'
+  const tasks = plan.mode === 'executable' ? plan.tasks.filter(task => task.id !== plan.removedTaskId) : []
+  const directionEnded = ended && plan.mode === 'direction'
+  return <div className="page-enter action-flow-page"><div className="page-heading"><div><span className="eyebrow">当前行动</span><h1>{directionEnded ? '本周期已结束，但暂时不能更新诊断' : ended ? `${plan.days} 天行动周期已结束` : `这 ${plan.days} 天，只推进一个主要目标`}</h1><p>{directionEnded ? `这次只记录了“${plan.gapId === 'after-spring' ? 'Spring Boot 基础' : 'MySQL 基础'}”的行动方向，没有设置可验证的完成标准，因此目前没有足够依据判断能力是否变化。` : ended ? '现在反馈真实完成情况，我们会根据新的事实重新判断下一步。' : '对照目标和完成标准，记录本周期真实的推进情况。'}</p></div></div>
+    {notice && <div className="notice success"><div><strong>{notice}</strong><p>行动调整不会直接改变岗位差距判断。</p></div></div>}
+    <div className="content-grid"><div className="stack"><section className="surface action-panel"><div className="action-panel-head"><div><span className="eyebrow">{ended ? '周期结束' : `第 1 / ${plan.days} 天`}</span><h2>{plan.title}</h2></div><span className={`badge ${ended && !assessment.actionHasFeedback ? 'status-unknown' : 'status-confirmed'}`}>{directionEnded ? '缺少可验证结果' : ended ? assessment.actionHasFeedback ? '已反馈' : '待反馈' : '进行中'}</span></div><div className="action-meta"><span>关联：{plan.gapId === 'after-java' ? 'Java 核心基础 P0 · MySQL 基础 P0' : plan.gapId === 'after-mysql' ? 'MySQL 基础 P0' : assessment.updatedDiagnosis ? 'Spring Boot P0' : 'Spring Boot P1'}</span><span>{plan.days} 天</span></div></section>
+      {tasks.map((task, index) => <article className="surface action-task-card" key={task.id}><div className="action-task-head"><span className="section-number">{index + 1}</span><h3>{task.title}</h3></div><div className="action-task-detail"><strong>目标</strong><p>{task.id === 'algorithms' ? `完成 ${plan.algorithmTarget} 道数组 / 字符串基础题。` : task.goal}</p></div><div className="action-task-detail"><strong>完成标准</strong><ul>{task.criteria.map(item => <li key={item}>{item}</li>)}</ul></div><div className="action-task-progress"><strong>当前进展</strong>{task.id === 'algorithms' ? <div className="quantity-progress"><span>{assessment.actionProgress.algorithmCompleted} / {plan.algorithmTarget} 道</span><button className="button secondary small" disabled={ended} onClick={() => assessment.recordAlgorithmProgress(assessment.actionProgress.algorithmCompleted + 1)}>记录进展 +1</button></div> : <p>{ended ? '等待你反馈真实掌握程度' : '本周期进行中，结束后反馈真实掌握程度'}</p>}</div></article>)}
+      {directionEnded ? <section className="surface action-panel direction-ended-state"><span className="badge status-unknown">缺少可验证结果</span><h2>本次诊断状态：没有变化</h2><p>原因：缺少可以确认的行动结果。系统不会仅因为周期结束就推断你已掌握 Spring Boot 或 MySQL。</p><div className="button-row"><button className="button primary" onClick={() => navigate('diagnosis')}>回到我的诊断 <ArrowRight size={16}/></button><button className="button secondary" onClick={() => assessment.continueNext(true)}>重新选择行动</button></div><p className="direction-recommendation">系统推荐仍可参考 Java 核心基础，是否调整由你决定。</p></section> : !tasks.length && <div className="surface action-panel"><h2>当前只记录了行动方向</h2><p>尚无已确认的详细子项和完成标准，本周期不会自动改变能力判断。</p></div>}
+      {ended && !!tasks.length ? <div className={`surface status-action-card ${assessment.actionHasFeedback ? 'success' : 'warning'}`}><div className="status-action-copy"><span className={`badge ${assessment.actionHasFeedback ? 'status-confirmed' : 'status-unknown'}`}>{assessment.actionHasFeedback ? '已反馈' : '待反馈'}</span><strong>{assessment.actionHasFeedback ? '本次反馈已更新诊断' : '周期已结束，下一步取决于真实进展'}</strong><p>{assessment.actionHasFeedback ? '可以查看新事实和下一阶段建议。' : '反馈后会更新已确认事实与下一阶段建议。'}</p></div><button className="button primary" onClick={() => navigate(assessment.actionHasFeedback ? 'update' : 'feedback')}>{assessment.actionHasFeedback ? '查看本次更新' : '反馈本次行动结果'} <ArrowRight size={16}/></button></div> : null}
+      <div className="button-row">{!!tasks.length && <button className="button secondary" onClick={() => setEvidenceOpen(true)}><CircleHelp size={16}/> 查看行动依据</button>}{!!tasks.length && <button className="button secondary" onClick={() => setAdjustOpen(true)}>调整当前行动</button>}{ended && assessment.actionHasFeedback && <button className="button secondary" onClick={() => assessment.continueNext(false)}>选择下一阶段行动</button>}</div>
+    </div><ContextRail><RailCard title="当前目标"><strong>{assessment.form.targetRole || 'Java 后端开发实习生'}</strong><p>距离投递约 {assessment.form.months || '4'} 个月</p><p>每周约 {assessment.form.hours || '20'}h 可投入</p></RailCard><RailCard title="行动状态"><p>{ended ? '本周期已结束' : '本周期进行中'}</p><p>能力状态只根据实际反馈更新，不根据任务数量估算。</p></RailCard></ContextRail></div>
+    {adjustOpen && plan.mode === 'executable' && <ActionAdjustmentDrawer plan={plan} onClose={() => setAdjustOpen(false)} onSave={next => { assessment.adjustCurrentAction(next); setAdjustOpen(false); setNotice('当前行动已调整') }}/>}
+    {evidenceOpen && <DrawerPortal><div className="overlay drawer-overlay" onMouseDown={event => { if (event.target === event.currentTarget) setEvidenceOpen(false) }}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="action-evidence-title"><div className="drawer-header"><div><span className="eyebrow">行动依据</span><h2 id="action-evidence-title">这个行动来自哪些差距？</h2></div><button className="icon-button" aria-label="关闭" onClick={() => setEvidenceOpen(false)}><X size={20}/></button></div><div className="drawer-content action-evidence"><section><h3>Java 核心基础 <span className="badge priority-P0">P0</span></h3><p>用户确认多线程尚未学习，属于进入框架学习前的关键基础。</p></section><section><h3>MySQL 基础 <span className="badge priority-P0">P0</span></h3><p>用户确认目前只掌握 CRUD，索引和事务仍需补充。</p></section><section><h3>为什么暂时没有 Redis / JVM？</h3><p>当前不是最优先的前置能力，因此暂不进入本周期。这是主动取舍，并非遗漏岗位要求。</p></section></div></aside></div></DrawerPortal>}
+  </div>
 }

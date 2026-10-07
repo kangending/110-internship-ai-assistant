@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ArrowRight, FileSearch, X } from "lucide-react";
+import { DrawerPortal } from './DrawerPortal';
 import { SourceBadge, StatusBadge } from "./Badges";
 import type { DiagnosisRecommendation, DiagnosisSnapshot, Information } from "../types/case";
 
@@ -23,14 +24,16 @@ export function EvidenceDrawer({
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
-  const evidence = recommendation.informationIds
+  const evidenceIds = recommendation.informationIds.includes('unknown-tools')
+    ? recommendation.informationIds : [...recommendation.informationIds, 'unknown-tools'];
+  const evidence = evidenceIds
     .map((id) => informationById.get(id))
     .filter((item) => item !== undefined);
   const requirements = recommendation.requirementIds
     .map((id) => diagnosis.requirements.find((item) => item.id === id))
     .filter((item) => item !== undefined);
   return (
-    <div
+    <DrawerPortal><div
       className="overlay drawer-overlay"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -86,7 +89,7 @@ export function EvidenceDrawer({
                   {item.source ? (
                     <SourceBadge source={item.source} />
                   ) : (
-                    <StatusBadge status="unknown" />
+                    <><StatusBadge status="unknown" /><span className="source-badge">来源：未提供足够信息</span></>
                   )}
                   {item.status === "inferred" && (
                     <p className="caution-text">
@@ -125,6 +128,6 @@ export function EvidenceDrawer({
           </button>
         </div>
       </aside>
-    </div>
+    </div></DrawerPortal>
   );
 }

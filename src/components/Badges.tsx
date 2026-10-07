@@ -6,7 +6,7 @@ import type {
   Priority,
 } from "../types/case";
 
-const sourceLabel: Record<InformationSource | "action_feedback", string> = {
+const sourceLabel: Record<InformationSource, string> = {
   user_input: "你的填写",
   jd: "目标 JD",
   ai_inference: "AI 推测",
@@ -14,7 +14,7 @@ const sourceLabel: Record<InformationSource | "action_feedback", string> = {
   user_correction: "用户纠正",
   user_supplement: "用户补充",
   user_confirmation: "用户确认",
-  action_feedback: "行动反馈",
+  action_feedback: "本次行动反馈",
 };
 const statusLabel: Record<InformationStatus, string> = {
   confirmed: "已确认",
@@ -45,7 +45,7 @@ export function StatusBadge({ status }: { status: InformationStatus }) {
 export function SourceBadge({
   source,
 }: {
-  source: InformationSource | "action_feedback";
+  source: InformationSource;
 }) {
   return <span className="source-badge">来源：{sourceLabel[source]}</span>;
 }

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 export type Route =
-  "home" | "create" | "understanding" | "diagnosis" | "action";
+  "home" | "create" | "understanding" | "diagnosis" | "proposal" | "action" | "feedback" | "update";
 
 function subscribe(callback: () => void) {
   window.addEventListener("hashchange", callback);
@@ -14,7 +14,7 @@ function getSnapshot(): Route {
     path === "create" ||
     path === "understanding" ||
     path === "diagnosis" ||
-    path === "action"
+    path === "action" || path === "proposal" || path === "feedback" || path === "update"
   )
     return path;
   return "home";

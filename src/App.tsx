@@ -3,6 +3,9 @@ import { AppLayout } from "./layouts/AppLayout";
 import { CorrectionDialog } from "./components/CorrectionDialog";
 import { SupplementDrawer } from "./components/SupplementDrawer";
 import { CurrentActionPage } from "./pages/CurrentActionPage";
+import { ActionProposalPage } from "./pages/ActionProposalPage";
+import { ActionFeedbackPage } from "./pages/ActionFeedbackPage";
+import { ActionUpdatePage } from "./pages/ActionUpdatePage";
 import { CreateDiagnosisPage } from "./pages/CreateDiagnosisPage";
 import { DiagnosisPage } from "./pages/DiagnosisPage";
 import { HomePage } from "./pages/HomePage";
@@ -29,9 +32,13 @@ function App() {
       <DiagnosisPage
         assessment={assessment}
         onCorrect={() => setDialogOpen(true)}
+        onSupplement={() => setSupplementOpen(true)}
       />
     ),
     action: <CurrentActionPage assessment={assessment} />,
+    proposal: <ActionProposalPage assessment={assessment} />,
+    feedback: <ActionFeedbackPage assessment={assessment} />,
+    update: <ActionUpdatePage assessment={assessment} />,
   }[route];
   return (
     <AppLayout activeRoute={route} assessment={assessment}>
@@ -48,7 +55,8 @@ function App() {
       {supplementOpen && (
         <SupplementDrawer
           initial={assessment.supplementSelections}
-          locked={assessment.corrected ? ["threads", "mysql"] : []}
+          generic={!assessment.isCaseScenario}
+          guidedDemo={assessment.guidedDemo}
           onClose={() => setSupplementOpen(false)}
           onSave={(value) => {
             assessment.saveSupplements(value);

@@ -32,4 +32,4 @@ export const supplementOptions = {
 } as const;
 
 export type SupplementKey = keyof typeof supplementOptions;
-export type Supplements = Partial<Record<SupplementKey, string>>;
+export type Supplements = Partial<Record<SupplementKey, string>> & { general?: string };

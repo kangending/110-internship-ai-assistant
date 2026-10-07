@@ -25,11 +25,15 @@ export function resolveCaseInformation(supplements: Supplements, corrected: bool
 
   if (corrected) {
     for (const correction of linHaoCase.corrections) {
-      const fact: ConfirmedInformation = { ...correction, status: "confirmed" };
+      const latestAnswer = correction.id === "correction-threads" ? supplements.threads
+        : correction.id === "correction-mysql" ? supplements.mysql : undefined;
+      const fact: ConfirmedInformation = latestAnswer
+        ? { ...correction, statement: `${correction.topic}：${latestAnswer}`, status: "confirmed" }
+        : { ...correction, status: "confirmed" };
       if (correction.id === "correction-java") confirmed.delete("fact-java");
       if (correction.id === "correction-project") confirmed.delete("fact-project");
-      if (correction.id === "correction-threads") confirmed.delete("supplement-threads");
-      if (correction.id === "correction-mysql") confirmed.delete("supplement-mysql");
+      if (correction.id === "correction-threads") { confirmed.delete("supplement-threads"); byId.delete("supplement-threads"); }
+      if (correction.id === "correction-mysql") { confirmed.delete("supplement-mysql"); byId.delete("supplement-mysql"); }
       confirmed.set(fact.id, fact);
       byId.set(fact.id, fact);
       for (const oldId of correction.supersedesInformationIds) byId.set(oldId, fact);
@@ -64,8 +68,8 @@ export function resolveCaseInformation(supplements: Supplements, corrected: bool
   // Spring Boot inference never supplies any of these selections.
   const supplementSelections: Supplements = { ...supplements };
   if (corrected) {
-    supplementSelections.threads = "尚未学习";
-    supplementSelections.mysql = "只会基础 CRUD";
+    supplementSelections.threads = supplements.threads ?? "尚未学习";
+    supplementSelections.mysql = supplements.mysql ?? "只会基础 CRUD";
   }
   const remainingSupplementItems = unknown.filter(item =>
     Object.values(supplementOptions).some(option => option.unknownId === item.id));

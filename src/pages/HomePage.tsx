@@ -30,8 +30,11 @@ const flow = [
 ];
 
 export function HomePage({ assessment }: { assessment: Assessment }) {
+  const advancedJava = assessment.updatedDiagnosis?.recommendations.find(item => item.id === 'after-java')?.gapStatus === 'partial';
+  const latestMainline = assessment.updatedDiagnosis?.recommendations[0];
+  const preliminary = assessment.stage === 'preliminary';
   const existing =
-    assessment.demoState === "existing" || assessment.stage === "revised";
+    assessment.demoState === "existing" || preliminary || assessment.stage === "revised" || !!assessment.updatedDiagnosis;
   if (existing)
     return (
       <div className="page-enter home-page">
@@ -40,8 +43,9 @@ export function HomePage({ assessment }: { assessment: Assessment }) {
         </div>
         <h1>目标已明确，接着推进最重要的一步。</h1>
         <p className="hero-lead">
-          最近的补充已经更新诊断，可以从当前主线继续。
+          {preliminary ? '目前只有初步判断，先确认关键依据，再决定下一步。' : assessment.hasCompletedVerifiedCycle ? '本轮诊断、行动和反馈已完成；下一轮准备由你决定是否开始。' : assessment.updatedDiagnosis ? '本次行动反馈已经更新诊断，可以从当前主线继续。' : '最近的补充已经更新诊断，可以从当前主线继续。'}
         </p>
+        {assessment.hasCompletedVerifiedCycle && <span className="badge status-confirmed home-cycle-status">本轮准备闭环已完成</span>}
         <div className="existing-grid">
           <div className="surface stat-panel">
             <span className="muted-label">当前目标</span>
@@ -49,14 +53,14 @@ export function HomePage({ assessment }: { assessment: Assessment }) {
             <span>距离投递约 4 个月</span>
           </div>
           <div className="surface stat-panel">
-            <span className="muted-label">最近变化</span>
-            <strong>Java 核心基础</strong>
-            <span>当前缺口 → 部分满足</span>
+            <span className="muted-label">{preliminary ? '当前状态' : '最近变化'}</span>
+            <strong>{preliminary ? '初步诊断' : 'Java 核心基础'}</strong>
+            <span>{preliminary ? '关键依据仍待确认' : assessment.updatedDiagnosis ? advancedJava ? '当前缺口 → 部分满足' : '仍需优先巩固' : '多线程尚未学习 · P0'}</span>
           </div>
           <div className="surface stat-panel">
             <span className="muted-label">当前主线</span>
-            <strong>Spring Boot 基础</strong>
-            <span>继续推进</span>
+            <strong>{assessment.updatedDiagnosis ? latestMainline?.title : preliminary ? 'Spring Boot 基础' : 'Java 核心基础'}</strong>
+            <span>{preliminary ? '暂列优先，可能调整' : assessment.updatedDiagnosis ? '下一阶段建议' : '当前优先处理'}</span>
           </div>
         </div>
         <div className="button-row">
@@ -64,13 +68,13 @@ export function HomePage({ assessment }: { assessment: Assessment }) {
             className="button primary hero-cta"
             onClick={() => navigate("diagnosis")}
           >
-            查看最新诊断 <ArrowRight size={16} />
+            {preliminary ? '查看初步诊断' : '查看最新诊断'} <ArrowRight size={16} />
           </button>
           <button
             className="button secondary"
-            onClick={() => navigate("action")}
+            onClick={() => preliminary ? assessment.returnToUnderstanding() : assessment.actionHasFeedback ? assessment.continueNext(false) : navigate(assessment.currentAction ? 'action' : 'diagnosis')}
           >
-            继续当前行动
+            {preliminary ? '继续确认信息' : assessment.actionHasFeedback ? '规划下一轮' : assessment.currentAction ? '继续当前行动' : '选择当前行动'}
           </button>
         </div>
         <p className="disclaimer">模拟案例，仅用于原型体验。</p>

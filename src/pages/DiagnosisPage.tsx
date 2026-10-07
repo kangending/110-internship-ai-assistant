@@ -3,12 +3,13 @@ import {
   ArrowRight,
   CircleHelp,
   Sparkles,
+  Info,
   Target,
   TriangleAlert,
 } from "lucide-react";
-import { linHaoCase } from "../data/linHao";
 import { ContextRail, RailCard } from "../components/ContextRail";
 import { DiagnosisDiff } from "../components/DiagnosisDiff";
+import { DiagnosisHistoryDrawer } from "../components/DiagnosisHistoryDrawer";
 import { EvidenceDrawer } from "../components/EvidenceDrawer";
 import { LoadingState } from "../components/LoadingState";
 import { RecommendationCard } from "../components/RecommendationCard";
@@ -18,13 +19,16 @@ import type { DiagnosisRecommendation, DiagnosisSnapshot } from "../types/case";
 export function DiagnosisPage({
   assessment,
   onCorrect,
+  onSupplement,
 }: {
   assessment: Assessment;
   onCorrect: () => void;
+  onSupplement: () => void;
 }) {
   const [activeEvidence, setActiveEvidence] =
     useState<DiagnosisRecommendation | null>(null);
-  const [selected, setSelected] = useState("after-java");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   if (assessment.stage === "reanalyzing") return <LoadingState revising />;
   if (assessment.stage !== "preliminary" && assessment.stage !== "revised")
     return (
@@ -42,7 +46,7 @@ export function DiagnosisPage({
         </button>
       </div>
     );
-  if (!assessment.isCaseScenario)
+  if (!assessment.isCaseScenario && !assessment.isCustomSpringReady)
     return (
       <div className="message-state page-enter">
         <div className="message-icon">
@@ -64,11 +68,9 @@ export function DiagnosisPage({
       </div>
     );
 
-  const formal = assessment.canGenerateFormal || assessment.demoState === "revised" || assessment.demoState === "existing";
-  const revised = !!(assessment.resolvedInformation?.useRevisedRanking || assessment.demoState === "revised" || assessment.demoState === "existing");
-  const base = revised
-    ? linHaoCase.revisedDiagnosis
-    : linHaoCase.firstDiagnosis;
+  const formal = !!assessment.updatedDiagnosis || assessment.canGenerateFormal || assessment.demoState === "revised" || assessment.demoState === "existing";
+  const revised = assessment.usesRevisedDiagnosis;
+  const base = assessment.effectiveDiagnosis;
   const noJd = assessment.form.noJd || !assessment.form.jdText.trim();
   const diagnosis: DiagnosisSnapshot = noJd
     ? {
@@ -93,7 +95,7 @@ export function DiagnosisPage({
     ...diagnosis, preliminary: !formal,
     recommendations: diagnosis.recommendations.map(item => ({
       ...item,
-      informationIds: item.id === "after-java" ? ["fact-java", "unknown-threads"]
+      informationIds: assessment.updatedDiagnosis ? item.informationIds : item.id === "after-java" ? ["fact-java", "unknown-threads"]
         : item.id === "after-mysql" ? ["unknown-mysql-depth"]
         : item.id === "after-spring" ? ["fact-java", "unknown-threads"]
         : item.informationIds,
@@ -102,27 +104,31 @@ export function DiagnosisPage({
   const remainingCount = assessment.remainingUnknown.length;
   const confirmedCount = assessment.resolvedInformation?.confirmed.length ?? 0;
   const inferredCount = assessment.resolvedInformation?.inferred.length ?? 0;
+  const guidedJavaId = assessment.guidedDemo && formal && !assessment.hasCompletedVerifiedCycle
+    ? visibleDiagnosis.recommendations.find(item => item.id === 'after-java')?.id : undefined;
   const selectedRecommendationId = visibleDiagnosis.recommendations.some(item => item.id === selected)
-    ? selected : visibleDiagnosis.recommendations[0].id;
+    ? selected! : guidedJavaId ?? visibleDiagnosis.recommendations[0].id;
   return (
     <div className="page-enter diagnosis-page">
       <div className="page-heading">
         <div>
           <span className="eyebrow">我的诊断</span>
-          <h1>{formal ? revised ? assessment.revisedBy === "supplement" ? "建议已根据你的补充更新" : "建议已根据你的纠正更新" : "正式诊断" : "当前的初步判断"}</h1>
+          <h1>{assessment.updatedDiagnosis ? '最新诊断' : formal ? revised ? assessment.revisedBy === "supplement" ? "建议已根据你的补充更新" : "建议已根据你的纠正更新" : "正式诊断" : "当前的初步判断"}</h1>
           <p>
             {formal
-              ? "优先级现在依据你补充的实际情况。"
+              ? assessment.updatedDiagnosis ? '优先级已根据本次行动反馈中的明确事实更新。' : "优先级现在依据你补充的实际情况。"
               : "先看当前排序，任何不准确的判断都可以修正。"}
           </p>
         </div>
+        {formal && assessment.isCaseScenario && <button className="button secondary" onClick={() => setHistoryOpen(true)}>查看变化记录</button>}
       </div>
+      {assessment.guidedDemoDeviated && <div className="notice warning" role="status"><CircleHelp size={17}/><div><strong>已修改标准演示预设</strong><p>选择其他方向可能无法进入完整行动反馈闭环。</p></div></div>}
       {formal ? (
         <div className={`notice ${noJd ? "warning" : "success"}`}>
           <Sparkles size={17} />
           <div>
-            <strong>{revised ? `已根据你的${assessment.revisedBy === "supplement" ? "补充" : "纠正"}重新排序` : "关键信息已确认 · 正式诊断"}</strong>
-            <p>{revised ? "当前 Top 3 已依据最新确认的事实排序。" : "当前判断基于已确认的关键信息。"}</p>
+            <strong>{assessment.updatedDiagnosis ? '已根据本次行动反馈更新' : revised ? `已根据你的${assessment.revisedBy === "supplement" ? "补充" : "纠正"}重新排序` : "关键信息已确认 · 正式诊断"}</strong>
+            <p>{assessment.updatedDiagnosis ? assessment.updatedDiagnosis.recommendations.find(item => item.id === 'after-java')?.gapStatus === 'partial' ? 'Java 核心基础已从当前缺口进入部分满足；Spring Boot 成为当前主线。' : '当前反馈还不足以改变 Java 核心基础的优先级，请继续巩固。' : revised ? "当前 Top 3 已依据最新确认的事实排序。" : "当前判断基于已确认的关键信息。"}</p>
           </div>
         </div>
       ) : (
@@ -138,6 +144,7 @@ export function DiagnosisPage({
           </div>
         </div>
       )}
+      {formal && remainingCount > 0 && <div className="notice information-reminder" role="status"><Info size={18}/><div><strong>仍有 {remainingCount} 项信息未确认</strong><p>{assessment.remainingUnknown.map(item => item.statement).join('；')}。这不会阻止本次正式诊断，相关岗位要求仍保持未知。</p></div><button className="button ghost small" onClick={onSupplement}>继续补充</button></div>}
       <div className="content-grid">
         <div className="stack">
           <div className="section-heading list-heading">
@@ -161,7 +168,7 @@ export function DiagnosisPage({
           {!formal && <div className="surface status-action-card warning"><div className="status-action-icon"><CircleHelp size={20}/></div><div className="status-action-copy"><span className="badge status-unknown">待确认</span><strong>还有关键信息会影响建议排序</strong><p>先确认影响当前优先级的信息，再决定下一步。</p></div><button className="button primary" onClick={() => setActiveEvidence(visibleDiagnosis.recommendations[0])}>检查关键依据 <ArrowRight size={16}/></button></div>}
           {formal && (
             <>
-              {revised && <DiagnosisDiff
+              {assessment.isCaseScenario && revised && !assessment.updatedDiagnosis && <DiagnosisDiff
                 targetRole={assessment.form.targetRole || "Java 后端开发实习生"}
                 months={assessment.form.months || "4"}
                 revisedBy={assessment.revisedBy}
@@ -174,13 +181,14 @@ export function DiagnosisPage({
                     <button
                       className={`action-option ${selectedRecommendationId === item.id ? "selected" : ""}`}
                       key={item.id}
-                      onClick={() => setSelected(item.id)}
+                      onClick={() => { setSelected(item.id); if (guidedJavaId && item.id !== 'after-java') assessment.markGuidedDemoDeviation(); }}
                     >
                       <span>{item.title}</span>
                       <small>
                         {item.priority}
                         {item.rank === 1 ? " · 推荐" : ""}
                       </small>
+                      {guidedJavaId && item.id === 'after-java' && <span className="badge priority-P0">标准演示推荐</span>}
                     </button>
                   ))}
                 </div>
@@ -239,6 +247,7 @@ export function DiagnosisPage({
           }}
         />
       )}
+      {historyOpen && <DiagnosisHistoryDrawer entries={assessment.diagnosisHistory} onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }

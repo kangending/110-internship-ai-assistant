@@ -47,7 +47,7 @@ export function DiagnosisDiff({
               {previousRank && previousRank < current.rank ? (
                 <ArrowDownRight className="change-down" size={18} />
               ) : (
-                <ArrowUpRight className="change-up" size={18} />
+                <ArrowUpRight className="change-info" size={18} />
               )}
             </div>
           );

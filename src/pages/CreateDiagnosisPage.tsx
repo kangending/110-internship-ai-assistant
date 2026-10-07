@@ -45,7 +45,7 @@ export function CreateDiagnosisPage({
         </div>
         {assessment.usingCase ? (
           <div className="case-loaded" aria-label="林浩模拟案例已载入">
-            <div className="case-loaded-head"><span>模拟案例</span><span className="case-loaded-badge">已载入</span></div>
+            <div className="case-loaded-head"><span>模拟案例{assessment.guidedDemo ? ' · 标准演示路径' : ''}</span><span className="case-loaded-badge">已载入</span></div>
             <div className="case-loaded-body"><strong>林浩</strong><button type="button" className="button ghost small" onClick={() => { setForm(caseForm); setErrors({}); }}>重新载入</button></div>
             <p>大三上 · 软件工程 · Java 后端</p>
           </div>
@@ -57,6 +57,13 @@ export function CreateDiagnosisPage({
           </button>
         )}
       </div>
+      {assessment.guidedDemo && (
+        <aside className="guided-demo-callout">
+          <span className="badge priority-P0">标准案例闭环方案</span>
+          <strong>你已进入标准案例闭环方案</strong>
+          <p>接下来系统将按标准演示路径带你体验完整闭环。后续关键步骤已为演示预设，如无特殊需要，建议保持默认设置继续。</p>
+        </aside>
+      )}
       <div className="content-grid">
         <form className="form-stack" onSubmit={submit} noValidate>
           <section className="surface form-section">

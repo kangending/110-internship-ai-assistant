@@ -8,6 +8,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { Route } from "../components/useHashRoute";
+import { FlowBackButton } from "../components/FlowBackButton";
+import { canStartAction } from "../data/linHaoAction";
 import type { Assessment, DemoState } from "../state/useAssessment";
 
 const navigation = [
@@ -16,13 +18,16 @@ const navigation = [
   { route: "action", label: "当前行动", href: "#/action", icon: ListChecks },
 ] as const;
 
-const demoOptions: { value: DemoState | "reset"; label: string }[] = [
+const demoOptions: { value: DemoState | "reset" | "action_active" | "feedback_done" | "latest"; label: string }[] = [
   { value: "first", label: "首次使用" },
-  { value: "existing", label: "已有记录" },
-  { value: "insufficient", label: "信息不足" },
-  { value: "failure", label: "AI 生成失败" },
-  { value: "preliminary", label: "初步诊断" },
-  { value: "revised", label: "用户纠正后" },
+  { value: "existing", label: "模拟已有记录（林浩）" },
+  { value: "insufficient", label: "模拟信息不足（林浩）" },
+  { value: "failure", label: "模拟 AI 生成失败" },
+  { value: "preliminary", label: "模拟初步诊断（林浩）" },
+  { value: "revised", label: "模拟用户纠正后（林浩）" },
+  { value: "action_active", label: "模拟行动进行中（林浩）" },
+  { value: "feedback_done", label: "模拟行动反馈完成后（林浩）" },
+  { value: "latest", label: "模拟最新诊断（林浩）" },
   { value: "reset", label: "恢复初始状态" },
 ];
 
@@ -55,13 +60,15 @@ export function AppLayout({
   const navRoute =
     activeRoute === "create" || activeRoute === "understanding"
       ? "diagnosis"
-      : activeRoute;
+      : activeRoute === "proposal" || activeRoute === "feedback" || activeRoute === "update" ? "action" : activeRoute;
   const hasContext =
     assessment.form.targetRole.trim() || assessment.stage === "revised";
+  const canFastForward = !!assessment.currentAction && canStartAction(assessment.currentAction) &&
+    assessment.actionPeriod === 'active' && !assessment.actionHasFeedback;
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#/" aria-label="回到首页" onClick={() => setDemoOpen(false)}>
+        <a className="brand" href="#/" aria-label="回到首页" onClick={() => { setDemoOpen(false); assessment.clearFlowOrigins(); }}>
           <span className="brand-mark">
             <Sparkles size={16} strokeWidth={2.3} />
           </span>
@@ -73,7 +80,7 @@ export function AppLayout({
             <a
               key={route}
               href={href}
-              onClick={() => setDemoOpen(false)}
+              onClick={() => { setDemoOpen(false); assessment.clearFlowOrigins(); }}
               className={`nav-link ${navRoute === route ? "active" : ""}`}
               aria-current={navRoute === route ? "page" : undefined}
             >
@@ -105,6 +112,10 @@ export function AppLayout({
                   {option.label}
                 </button>
               ))}
+              {canFastForward && <button type="button" onClick={() => {
+                assessment.selectDemo('after_seven_days');
+                setDemoOpen(false);
+              }}>快进到本周期结束</button>}
             </div>
           )}
           <span className="sidebar-footnote">虚构案例 · 仅供原型体验</span>
@@ -127,7 +138,7 @@ export function AppLayout({
             </div>
           )}
         </header>
-        <main className="main-content">{children}</main>
+        <main className="main-content"><FlowBackButton route={activeRoute} assessment={assessment}/>{children}</main>
       </div>
     </div>
   );

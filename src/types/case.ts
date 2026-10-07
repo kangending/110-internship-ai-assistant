@@ -7,6 +7,7 @@ export type InformationSource =
   | 'user_correction'
   | 'user_supplement'
   | 'user_confirmation'
+  | 'action_feedback'
 
 export type InformationStatus = 'confirmed' | 'inferred' | 'unknown'
 export type GapStatus = 'met' | 'partial' | 'gap' | 'unknown'
@@ -54,7 +55,7 @@ interface InformationBase {
 
 export interface ConfirmedInformation extends InformationBase {
   status: 'confirmed'
-  source: 'user_input' | 'jd' | 'user_correction' | 'user_supplement' | 'user_confirmation'
+  source: 'user_input' | 'jd' | 'user_correction' | 'user_supplement' | 'user_confirmation' | 'action_feedback'
 }
 
 export interface InferredInformation extends InformationBase {
@@ -113,7 +114,7 @@ export interface DiagnosisRecommendation {
 
 export interface DiagnosisSnapshot {
   id: string
-  kind: 'preliminary' | 'revised'
+  kind: 'preliminary' | 'revised' | 'post_action'
   /** Preliminary if key facts remain unconfirmed or only generic role requirements are available. */
   preliminary: boolean
   /** JD requirements when supplied; otherwise explicitly tagged generic assumptions. */

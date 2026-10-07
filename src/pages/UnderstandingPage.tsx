@@ -11,7 +11,7 @@ import { linHaoCase } from "../data/linHao";
 import { StatusBadge, SourceBadge } from "../components/Badges";
 import { ContextRail, RailCard } from "../components/ContextRail";
 import { LoadingState } from "../components/LoadingState";
-import { navigate, type Assessment } from "../state/useAssessment";
+import type { Assessment } from "../state/useAssessment";
 
 export function UnderstandingPage({
   assessment,
@@ -88,6 +88,16 @@ export function UnderstandingPage({
           <p>先核对事实、推测和暂时未知的内容。</p>
         </div>
       </div>
+      {assessment.guidedDemo && <aside className="guided-demo-callout">
+        <span className="badge priority-P0">标准案例闭环方案</span>
+        <strong>本案例已为完整演示预设关键选择。</strong>
+        <ul>
+          <li>AI 推测：建议选择“不准确”</li>
+          <li>待补充：打开后默认已选，建议不再更改</li>
+          <li>如果主动修改，可能进入其他分支，无法完整体验行动反馈闭环</li>
+        </ul>
+      </aside>}
+      {assessment.guidedDemoDeviated && <div className="notice warning" role="status"><CircleHelp size={17}/><div><strong>已修改标准演示预设</strong><p>后续可能进入其他诊断分支，无法完整体验行动反馈闭环。</p></div></div>}
       {assessment.corrected && <div className="notice success" role="status"><Sparkles size={18}/><div><strong>已根据你的补充更新理解</strong><p>纠正中的事实已确认；你可以核对后再生成诊断。</p></div></div>}
       <div className="notice guidance">
         <Sparkles size={18} />
@@ -166,17 +176,18 @@ export function UnderstandingPage({
               <div className="button-row">
                 <button
                   className="button secondary small"
-                  onClick={() => assessment.setAcceptedInference(true)}
-                  disabled={assessment.acceptedInference}
+                  onClick={() => assessment.acceptedInference ? assessment.revokeInferenceConfirmation() : assessment.setAcceptedInference(true)}
                 >
-                  {assessment.acceptedInference ? "已确认" : "符合我的情况"}
+                  {assessment.acceptedInference ? "修改确认" : "符合我的情况"}
                 </button>
                 <button
-                  className="button secondary small emphasis"
+                  className={`button secondary small emphasis ${assessment.guidedDemo && !assessment.acceptedInference ? 'guided-preselected' : ''}`}
+                  aria-pressed={assessment.guidedDemo && !assessment.acceptedInference}
                   onClick={onCorrect}
                 >
                   不准确
                 </button>
+                {assessment.guidedDemo && <span className="badge priority-P0">标准演示推荐</span>}
               </div>
             </section>
           )}
@@ -190,18 +201,19 @@ export function UnderstandingPage({
             </div>
             {remainingSupplementItems.length > 0 && <p className="section-intro">以下信息可以帮助完善判断，未填写的项目继续保持未知。</p>}
             <div className="fact-list">
+              {!isCaseUnderstanding && assessment.hasCustomSupplement && <div className="fact-row"><span>已补充岗位相关能力信息：{assessment.supplementSelections.general}</span><div><SourceBadge source="user_supplement"/><button className="button ghost small" onClick={onSupplement}>修改补充</button></div></div>}
               {remainingSupplementItems.map((item) => (
                 <div className="fact-row" key={item.id}>
                   <span>{item.statement}</span>
                   <button
                     className="button ghost small"
-                    onClick={isCaseUnderstanding ? onSupplement : assessment.backToForm}
+                    onClick={onSupplement}
                   >
                     补充
                   </button>
                 </div>
               ))}
-              {remainingSupplementItems.length === 0 && <p className="all-confirmed">当前列出的补充信息已确认。</p>}
+              {remainingSupplementItems.length === 0 && isCaseUnderstanding && <p className="all-confirmed">当前列出的补充信息已确认。</p>}
             </div>
           </section>
           <div className="sticky-action">
@@ -256,13 +268,6 @@ export function UnderstandingPage({
               {assessment.canGenerateFormal ? "关键信息已确认，可以生成正式诊断。" : "仍有关键未确认信息，继续查看将作为初步诊断。"}
             </p>
           </RailCard>
-          <button
-            className="button ghost small"
-            onClick={() => navigate("create")}
-          >
-            <ArrowLeft size={15} />
-            返回修改
-          </button>
         </ContextRail>
       </div>
     </div>
